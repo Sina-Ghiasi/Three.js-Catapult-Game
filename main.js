@@ -1,28 +1,23 @@
 
 
 var camera, activeCamera, orthographicCamera, scene, renderer, controls;
-var phsyicRenderer = false;
-var plane, world, mass, sphereBody, sphereShape, physicsMaterial, timeStep = 1 / 60;
-var mainCatapult, mainCatapultMesh, stonesBody = [], stonesMesh = [], enemiesCatapultsBody = [], enemiesCatapultsMesh = [],shootingPlace;
+
+//variables
+var plane, world, physicsMaterial, timeStep = 1 / 60;
+var stonesBody = [], stonesMesh = [], enemiesCatapultsBody = [], enemiesCatapultsMesh = [];
+var mainCatapultMesh,mainCatapultBody,mainStandMesh,mainStandBody,mainStandSize;
+
 
 var keyboard = new THREEx.KeyboardState();
 
+//shoot variables
 var shootDirection = new THREE.Vector3();
-
 var shootVelocity = {value:0.5};
 
 //window variables
-
-
+window.addEventListener("keyup", throwStone);
 window.addEventListener('resize', onWindowResize, false);
 
-function onWindowResize() {
-    var width = window.innerWidth;
-    var height = window.innerHeight;
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
-    renderer.setSize(width, height);
-}
 
 
 initCannon();
@@ -31,24 +26,21 @@ update();
 
 
 function initCannon() {
+
     // Setup our world
     world = new CANNON.World();
     world.quatNormalizeSkip = 0;
     world.quatNormalizeFast = false;
-
     var solver = new CANNON.GSSolver();
-
-    world.defaultContactMaterial.contactEquationStiffness = 1e9;
-    world.defaultContactMaterial.contactEquationRelaxation = 4;
-
     solver.iterations = 7;
     solver.tolerance = 0.1;
+    world.defaultContactMaterial.contactEquationStiffness = 1e9;
+    world.defaultContactMaterial.contactEquationRelaxation = 4;
     var split = true;
     if (split)
         world.solver = new CANNON.SplitSolver(solver);
     else
         world.solver = solver;
-
     world.gravity.set(0, -9.82, 0);
     world.broadphase = new CANNON.NaiveBroadphase();
 
@@ -60,17 +52,7 @@ function initCannon() {
         0.3  // restitution
     );
 
-
     world.addContactMaterial(physicsContactMaterial);
-
-    // Create a sphere
-    var mass = 100, radius = 1.3;
-    sphereShape = new CANNON.Sphere(radius);
-    sphereBody = new CANNON.Body({mass: mass});
-    sphereBody.addShape(sphereShape);
-    sphereBody.position.set(-20, 1.3, 0);
-    sphereBody.linearDamping = 0.9;
-    world.add(sphereBody);
 
     // Create a plane
     var groundShape = new CANNON.Plane();
@@ -78,6 +60,27 @@ function initCannon() {
     groundBody.addShape(groundShape);
     groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
     world.add(groundBody);
+
+
+
+    //create stand for main catapult
+    mainStandSize = new CANNON.Vec3(3,5,3);
+    var mainStandShape = new CANNON.Box(mainStandSize);
+    mainStandBody = new CANNON.Body({mass: 0});
+    mainStandBody.addShape(mainStandShape);
+    mainStandBody.position.set(-60,5,0);
+    world.add(mainStandBody);
+
+
+    // Create main catapult
+    var mass = 100, radius = 1.3;
+    mainCatapultShape = new CANNON.Sphere(radius);
+    mainCatapultBody = new CANNON.Body({mass: mass});
+    mainCatapultBody.addShape(mainCatapultShape);
+    mainCatapultBody.position.set(mainStandBody.position.x,mainStandBody.position.y+mainStandSize.y + 1.3, mainStandBody.position.z);
+    mainCatapultBody.linearDamping = 0.9;
+    world.add(mainCatapultBody);
+
 }
 
 function init() {
@@ -86,30 +89,83 @@ function init() {
     scene = new THREE.Scene();
     //scene.fog = new THREE.FogExp2(0xffffff,0.08);
 
+
     //making our scene objects
-    var plane = getPlane(1024);
 
-    var skyBoxGeometry = new THREE.CubeGeometry(1000, 1000, 1000);
-    var skyBoxMaterial = new THREE.MeshBasicMaterial({color: 0x9999ff, side: THREE.BackSide});
-    var skyBox = new THREE.Mesh(skyBoxGeometry, skyBoxMaterial);
+    //plane texture
+    var planeTexture = new THREE.TextureLoader().load("texture/Grass.jpg");
+    planeTexture.repeat.set(20,20);
+    planeTexture.wrapS = THREE.RepeatWrapping;
+    planeTexture.wrapT = THREE.RepeatWrapping;
+    planeTexture.magFilter = THREE.NearestFilter;
+    planeTexture.minFilter = THREE.LinearMipMapLinearFilter;
 
-    shootingPlace = getSphere(1.3);
-    var axesHelper = new THREE.AxesHelper( 10 );
-    axesHelper.position.set(0,0,0);
-
-
-    scene.add(skyBox);
-    scene.add(axesHelper);
+    //plane mesh
+    var geometry = new THREE.PlaneGeometry(512, 512);
+    var material = new THREE.MeshPhongMaterial({
+        color: 0xcccccc,
+        side: THREE.BackSide,
+        map:planeTexture,
+        bumpMap:planeTexture,
+        bumpScale :0.5
+    });
+    var plane = new THREE.Mesh(geometry, material);
+    plane.rotation.x = Math.PI / 2;
     scene.add(plane);
-    scene.add(shootingPlace);
+
+    //making sky box
+    var reflectionCube = new THREE.CubeTextureLoader()
+        .setPath('texture/skybox/')
+        .load(['px.jpg', 'nx.jpg', 'py.jpg', 'ny.jpg', 'pz.jpg', 'nz.jpg']);
+    reflectionCube.format = THREE.RGBFormat;
+    scene.background = reflectionCube;
+
+    //making stand
+    var mainStandTexture = new THREE.TextureLoader().load("texture/brick_stone_wall.jpg");
+    mainStandTexture.repeat.set(1,1);
+    mainStandTexture.wrapS = THREE.RepeatWrapping;
+    mainStandTexture.wrapT = THREE.RepeatWrapping;
+    mainStandTexture.magFilter = THREE.NearestFilter;
+    mainStandTexture.minFilter = THREE.LinearMipMapLinearFilter;
+
+
+    var mainStandGeometry = new THREE.BoxGeometry(mainStandSize.x*2,mainStandSize.y*2,mainStandSize.z*2);
+    var mainStandmaterial = new THREE.MeshPhongMaterial({
+        color: 0xcccccc,
+        side: THREE.FrontSide,
+        map:mainStandTexture,
+        bumpMap:mainStandTexture,
+        bumpScale :0.5});
+
+    mainStandMesh = new THREE.Mesh(mainStandGeometry,mainStandmaterial);
+    mainStandMesh.position.copy(mainStandBody.position);
+    scene.add(mainStandMesh);
+
+
+
+    //making main catapult
+    var mainCatapultGeometry = new THREE.SphereGeometry(1.3);
+    var mainCatapultMaterial = new THREE.MeshPhongMaterial({
+        color: 0x00ff00
+    });
+    mainCatapultMesh = new THREE.Mesh(mainCatapultGeometry,mainCatapultMaterial);
+    scene.add(mainCatapultMesh);
+
+    //making some enemy
+
+    for (let i =0;i<1;i++ ){
+        var postion = new THREE.Vector3(8,0,0);
+        makeEnemyCatapult(postion);
+
+    }
 
     //making our lights
     var ambiantlight = new THREE.AmbientLight(0xffffff, 1);
     scene.add(ambiantlight);
 
-    //making our camera
+    //making our cameras
     camera = new THREE.PerspectiveCamera(
-        50,
+        100,
         window.innerWidth / window.innerHeight,
         1,
         1000
@@ -118,13 +174,14 @@ function init() {
     orthographicCamera = new THREE.OrthographicCamera(window.innerWidth / -100, window.innerWidth / 100, window.innerHeight / 100, window.innerHeight / -100, 10, 1000);
     camera.add(orthographicCamera);
 
-    camera.position.x = 0;
-    camera.position.y = 10;
-    camera.position.z = 40;
+    camera.position.x = -32;
+    camera.position.y = 11.8;
+    camera.position.z = 21;
     camera.lookAt(scene.position);
 
     //setting default active camera
     activeCamera = camera;
+
 
     //making our renderer
     renderer = new THREE.WebGLRenderer({antialias: true});
@@ -136,40 +193,17 @@ function init() {
     controls = new THREE.OrbitControls(activeCamera, renderer.domElement);
 
 
-    for (let i =0;i<1;i++ ){
-        var postion = new THREE.Vector3(8,0,0);
-        makeEnemyCatapult(postion);
-    }
-
     //using gui
     var gui = new dat.GUI();
     var folder1 = gui.addFolder("camera and  light");
     folder1.add(ambiantlight, 'intensity', 0, 10);
-    folder1.add(activeCamera.position, 'z', -100, 100);
+    folder1.add(activeCamera.position, 'z', -200, 200);
+    folder1.add(activeCamera.position, 'x', -200, 200);
+    folder1.add(activeCamera.position, 'y', -200, 200);
 
 }
 
 
-function getPlane(size) {
-    var geometry = new THREE.PlaneGeometry(size, size);
-    var material = new THREE.MeshPhongMaterial({
-        color: 0xabab1a,
-        side: THREE.DoubleSide
-    });
-    var mesh = new THREE.Mesh(geometry, material);
-    mesh.rotation.x = Math.PI / 2;
-    return mesh;
-
-}
-
-function getSphere(r) {
-    var geometry = new THREE.SphereGeometry(r);
-    var material = new THREE.MeshPhongMaterial({
-        color: 0x00ff00
-    });
-    var mesh = new THREE.Mesh(geometry, material);
-    return mesh;
-}
 
 function updatePhysics() {
 
@@ -185,8 +219,8 @@ function updatePhysics() {
         enemiesCatapultsMesh[i].position.copy(enemiesCatapultsBody[i].position);
         enemiesCatapultsMesh[i].quaternion.copy(enemiesCatapultsBody[i].quaternion);
     }
-    shootingPlace.position.copy(sphereBody.position);
-
+    mainCatapultMesh.position.copy(mainCatapultBody.position);
+    mainStandMesh.position.copy(mainStandBody.position);
     //update main catapult
     //mainCatapultMesh.position.copy(mainCatapult.position);
    // mainCatapultMesh.quaternion.copy(mainCatapult.quaternion);
@@ -206,7 +240,6 @@ function update() {
     for(let i=0 ;i<stonesMesh.length;i++){
         checkCollison(stonesMesh[i],enemiesCatapultsMesh);
     }
-
     //update our scene here
     renderer.render(scene, camera);
     updatePhysics();
@@ -227,10 +260,7 @@ function checkCollison(stoneMesh,collidableMeshList) {
         var collisionResults = ray.intersectObjects(collidableMeshList);
         if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()){
             console.log("hit");
-        /*    let i = 1;
-            document.getElementById("hit").innerHTML = "hit : "+i;
-            i++;
-        */}
+        }
     }
 }
 
@@ -260,9 +290,9 @@ function throwStone(e) {
     if(e.keyCode ==65){
 
         //shooting coordinate
-        var x = sphereBody.position.x;
-        var y = sphereBody.position.y;
-        var z = sphereBody.position.z;
+        var x = mainCatapultBody.position.x;
+        var y = mainCatapultBody.position.y;
+        var z = mainCatapultBody.position.z;
 
 
         //make a body for our stone and add it to the world and body array
@@ -288,19 +318,25 @@ function throwStone(e) {
             shootDirection.z * shootVelocity.value);
 
         //positioning stone out of shooting place
-        x += shootDirection.x * (sphereShape.radius*1.02 + stoneShape.radius);
-        y += shootDirection.y * (sphereShape.radius*1.02 + stoneShape.radius);
-        z += shootDirection.z * (sphereShape.radius*1.02 + stoneShape.radius);
+        x += shootDirection.x * (mainCatapultShape.radius*1.02 + stoneShape.radius);
+        y += shootDirection.y * (mainCatapultShape.radius*1.02 + stoneShape.radius);
+        z += shootDirection.z * (mainCatapultShape.radius*1.02 + stoneShape.radius);
 
         stoneBody.position.set(x,y,z);
         stoneMesh.position.set(x,y,z);
 
-        sphereBody.position.set(-20,1.3,0);
+        mainCatapultBody.position.set(mainStandBody.position.x,mainStandBody.position.y+mainStandSize.y + 1.3, mainStandBody.position.z);
         shootVelocity.value =0;
 
 
     }
 }
 
-window.addEventListener("keyup", throwStone);
 
+function onWindowResize() {
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
+}
