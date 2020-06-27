@@ -203,10 +203,8 @@ function update() {
         }
     }
 
-    for(let i=0 ;i<enemiesCatapultsMesh.length;i++){
-       if(stonesMesh.length>0){
-           checkCollison(stonesMesh[i],enemiesCatapultsMesh);
-       }
+    for(let i=0 ;i<stonesMesh.length;i++){
+        checkCollison(stonesMesh[i],enemiesCatapultsMesh);
     }
 
     //update our scene here
