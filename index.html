@@ -4,12 +4,19 @@
     <meta charset="UTF-8">
     <title>Catapult</title>
     <style>
-        html,body{margin: 0;padding: 0;overflow: hidden}
+        html,body{margin: 0;padding: 0;overflow: hidden  ;width: 100%;height: 100%;}
+
     </style>
 
 </head>
 <body>
-<div id="webgl"></div>
+<div id="webgl">
+<div id="power" style="position: absolute;font-size: 40px;alignment: bottom;color: azure "></div>
+<div id="hit" style="position: absolute;font-size: 40px;alignment: center;color: azure "></div>
+</div>
+
+
+
 
 <script src="lib/threejs/three.js"></script>
 <script src="lib/dat.gui.min.js"></script>
@@ -18,5 +25,8 @@
 <script src="lib/Cannon.js"></script>
 <script src="lib/CannonDebugRenderer.js"></script>
 <script src="main.js"></script>
+
+
+
 </body>
 </html>
