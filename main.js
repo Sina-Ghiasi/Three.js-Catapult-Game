@@ -10,7 +10,7 @@ var mainStandBody,mainStandSize;
 var stats;
 var xPositions =[-45,-30,-15,0,15];
 var time = new Date();
-var gltfloader1 = new THREE.GLTFLoader();
+var gltfloader = new THREE.GLTFLoader();
 var keyboard = new THREEx.KeyboardState();
 var enemieNumber=0;
 //shoot variables
@@ -28,7 +28,8 @@ window.addEventListener("keyup", function (e) {
 
 });
 window.addEventListener('resize', onWindowResize, false);
-
+gltfloader.load('models/catapult2/scene.gltf', createCatapults);
+gltfloader.load('models/tower1/scene.gltf', createTower);
 
 
 initCannon();
@@ -82,7 +83,7 @@ function initCannon() {
 
 
     //create stand for main catapult
-    mainStandSize = new CANNON.Vec3(3,7,3);
+    mainStandSize = new CANNON.Vec3(2,7,3);
     var mainStandShape = new CANNON.Box(mainStandSize);
     mainStandBody = new CANNON.Body({mass: 0 ,material :physicsMaterial});
     mainStandBody.addShape(mainStandShape);
@@ -143,30 +144,11 @@ function init() {
     scene.background = reflectionCube;
 
 
-    //stand mesh
-/*
-    var tower ;
-    gltfloader1.load('models/tower/scene.gltf', function (gltf) {
-        tower = gltf.scene;
-        //tower.children[0].children[0].children[0].children[3].visible = false;
-        tower.scale.set(1/26, 1/23, 1/26);
-        tower.position.copy(mainStandBody.position);
-        scene.add(tower);
-    });*/
-
-
-
 
 
     //create reusable game objects
     createStones();
-    createCatapults();
     createStands();
-
-    //setting default positions
-    catapultsBody[0].position.set(mainStandBody.position.x,mainStandBody.position.y+mainStandSize.y + 1.6, mainStandBody.position.z);
-    scene.add(catapultsMesh[0]);
-    world.add(catapultsBody[0]);
 
 
 
@@ -189,9 +171,9 @@ function init() {
     //orthographicCamera = new THREE.OrthographicCamera(window.innerWidth / -100, window.innerWidth / 100, window.innerHeight / 100, window.innerHeight / -100, 10, 1000);
    // camera.add(orthographicCamera);
 
-    camera.position.x = -60;
-    camera.position.y = 12;
-    camera.position.z = 12;
+    camera.position.x = -64;
+    camera.position.y = 14;
+    camera.position.z = 7;
 
     //setting default active camera
     activeCamera = camera;
@@ -285,20 +267,35 @@ function checkCollison(stoneMesh,collidableMeshList) {
     }
 }
 
-function createCatapults() {
+function createCatapults(gltf) {
+    var catapult ;
 
+    catapult = gltf.scene;
+    //tower.children[0].children[0].children[0].children[3].visible = false;
+    catapult.scale.set(1/3, 1/3, 1/3);
+    //catapult.rotation.z = Math.PI/2;
     for(let i = 0;i<5;i++){
         var catapultShape = new CANNON.Sphere(1.6);
         var catapultBody = new CANNON.Body({mass: 0});
         catapultBody.addShape(catapultShape);
         catapultsBody.push(catapultBody);
 
-        //making mesh for our stone and add it to the scene and mesh array
-        var catapultGeometry = new THREE.SphereGeometry(1.6);
-        var material = new THREE.MeshPhongMaterial({color: 0x0000ff});
-        var catapultMesh = new THREE.Mesh(catapultGeometry, material);
-        catapultsMesh.push(catapultMesh);
+        var catapultModel = catapult.clone();
+        catapultsMesh.push(catapultModel);
     }
+    //setting default positions
+    catapultsBody[0].position.set(mainStandBody.position.x-2,mainStandBody.position.y+mainStandSize.y , mainStandBody.position.z);
+    scene.add(catapultsMesh[0]);
+    world.add(catapultsBody[0]);
+}
+function createTower(gltf){
+    var tower ;
+    tower = gltf.scene;
+    //tower.children[0].children[0].children[0].children[3].visible = false;
+    tower.scale.set(1/26, 1/15, 1/26);
+    tower.position.set(mainStandBody.position.x,mainStandBody.position.y-4,mainStandBody.position.z);
+    scene.add(tower);
+
 }
 function createStands(){
     var standTexture = new THREE.TextureLoader().load("texture/brick_stone_wall.jpg");
@@ -318,7 +315,7 @@ function createStands(){
 
         //making mesh for our stone and add it to the scene and mesh array
         var standGeometry = new THREE.BoxGeometry(halfExt.x*2,halfExt.y*2,halfExt.z*2);
-        var material = new THREE.MeshPhongMaterial({color:0x232426,mass: 0,map:standTexture});
+        var material = new THREE.MeshPhongMaterial({color:0x232426,map:standTexture});
         var standMesh = new THREE.Mesh(standGeometry, material);
         standsMesh.push(standMesh);
     }
@@ -357,7 +354,7 @@ function getNewPosition(index) {
     var position = new THREE.Vector3();
     var x = xPositions[index];
     var y =Math.floor(Math.random() * 20) +5;
-    position.set(x,1.6+y,0);
+    position.set(x,y,0);
     return position;
 }
 function positioningEnemies(number) {
@@ -368,7 +365,7 @@ function positioningEnemies(number) {
         catapultsBody[i].position.copy(newPosition);
         world.add(standsBody[i]);
         scene.add(standsMesh[i]);
-        standsBody[i].position.set(newPosition.x,newPosition.y-1.6-1,newPosition.z);
+        standsBody[i].position.set(newPosition.x,newPosition.y-1,newPosition.z);
     }
     enemieNumber = number;
     setInterval(enemieAttack,3000);
@@ -408,9 +405,9 @@ function throwStone(catapultBody,shootDirection,shootVelocity) {
         shootDirection.z * shootVelocity);
 
     //positioning stone out of shooting place
-    x += shootDirection.x * (5);
-    y += shootDirection.y * (5);
-    z += shootDirection.z * (5);
+    x += shootDirection.x * (2);
+    y += shootDirection.y * (2);
+    z += shootDirection.z * (2);
 
     stoneBody.position.set(x,y,z);
     stoneMesh.position.set(x,y,z);
