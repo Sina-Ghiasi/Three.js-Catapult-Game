@@ -5,12 +5,12 @@ var camera, activeCamera, orthographicCamera, scene, renderer, controls;
 //variables
 var plane, world, physicsMaterial, timeStep = 1 / 60;
 var stonesBody = [], stonesMesh = [], catapultsBody = [], catapultsMesh = [];
-var standsBody = [],standsMesh =[],collidables =[];
-var mainStandMesh,mainStandBody,mainStandSize;
+var standsBody = [],standsMesh =[];
+var mainStandBody,mainStandSize;
 var stats;
 var xPositions =[-45,-30,-15,0,15];
 var time = new Date();
-
+var gltfloader1 = new THREE.GLTFLoader();
 var keyboard = new THREEx.KeyboardState();
 var enemieNumber=0;
 //shoot variables
@@ -23,7 +23,7 @@ window.addEventListener("keyup", function (e) {
         throwStone(catapultsBody[0],new THREE.Vector3(1,1,0),userShootVelocity);
     }
     if(e.keyCode == 32){
-        positioningEnemies(1);
+        positioningEnemies(3);
     }
 
 });
@@ -82,7 +82,7 @@ function initCannon() {
 
 
     //create stand for main catapult
-    mainStandSize = new CANNON.Vec3(3,5,3);
+    mainStandSize = new CANNON.Vec3(3,7,3);
     var mainStandShape = new CANNON.Box(mainStandSize);
     mainStandBody = new CANNON.Body({mass: 0 ,material :physicsMaterial});
     mainStandBody.addShape(mainStandShape);
@@ -124,11 +124,12 @@ function init() {
     //plane mesh
     var geometry = new THREE.PlaneGeometry(512, 512);
     var material = new THREE.MeshPhongMaterial({
-        color: 0xcccccc,
+        color: 0x232426,
         side: THREE.BackSide,
         map:planeTexture,
         bumpMap:planeTexture,
-        bumpScale :0.5
+        bumpScale :0.1
+
     });
     var plane = new THREE.Mesh(geometry, material);
     plane.rotation.x = Math.PI / 2;
@@ -141,26 +142,19 @@ function init() {
     reflectionCube.format = THREE.RGBFormat;
     scene.background = reflectionCube;
 
-    //stand  texture
-    var mainStandTexture = new THREE.TextureLoader().load("texture/brick_stone_wall.jpg");
-    mainStandTexture.repeat.set(1,1);
-    mainStandTexture.wrapS = THREE.RepeatWrapping;
-    mainStandTexture.wrapT = THREE.RepeatWrapping;
-    mainStandTexture.magFilter = THREE.NearestFilter;
-    mainStandTexture.minFilter = THREE.LinearMipMapLinearFilter;
 
     //stand mesh
-    var mainStandGeometry = new THREE.BoxGeometry(mainStandSize.x*2,mainStandSize.y*2,mainStandSize.z*2);
-    var mainStandmaterial = new THREE.MeshPhongMaterial({
-        color: 0xcccccc,
-        side: THREE.FrontSide,
-        map:mainStandTexture,
-        bumpMap:mainStandTexture,
-        bumpScale :0.5});
+/*
+    var tower ;
+    gltfloader1.load('models/tower/scene.gltf', function (gltf) {
+        tower = gltf.scene;
+        //tower.children[0].children[0].children[0].children[3].visible = false;
+        tower.scale.set(1/26, 1/23, 1/26);
+        tower.position.copy(mainStandBody.position);
+        scene.add(tower);
+    });*/
 
-    mainStandMesh = new THREE.Mesh(mainStandGeometry,mainStandmaterial);
-    mainStandMesh.position.copy(mainStandBody.position);
-    scene.add(mainStandMesh);
+
 
 
 
@@ -177,9 +171,11 @@ function init() {
 
 
     //lights
-    var ambiantlight = new THREE.AmbientLight(0xffffff, 1);
+    var ambiantlight = new THREE.AmbientLight(0xffffff, 4);
     scene.add(ambiantlight);
 
+    var directionalLight = new THREE.DirectionalLight(0xaaaaaa, 2);
+    scene.add(directionalLight);
     //cameras
     camera = new THREE.PerspectiveCamera(
         100,
@@ -305,16 +301,24 @@ function createCatapults() {
     }
 }
 function createStands(){
+    var standTexture = new THREE.TextureLoader().load("texture/brick_stone_wall.jpg");
+    standTexture.repeat.set(1,1);
+    standTexture.wrapS = THREE.RepeatWrapping;
+    standTexture.wrapT = THREE.RepeatWrapping;
+    standTexture.magFilter = THREE.NearestFilter;
+    standTexture.minFilter = THREE.LinearMipMapLinearFilter;
+
     for(let i = 0;i<5;i++){
+
         var halfExt = new CANNON.Vec3(2,1,2);
         var standShape = new CANNON.Box(halfExt);
-        var standBody = new CANNON.Body({mass: 0});
+        var standBody = new CANNON.Body({mass:0});
         standBody.addShape(standShape);
         standsBody.push(standBody);
 
         //making mesh for our stone and add it to the scene and mesh array
         var standGeometry = new THREE.BoxGeometry(halfExt.x*2,halfExt.y*2,halfExt.z*2);
-        var material = new THREE.MeshPhongMaterial({color: 0x11bbff});
+        var material = new THREE.MeshPhongMaterial({color:0x232426,mass: 0,map:standTexture});
         var standMesh = new THREE.Mesh(standGeometry, material);
         standsMesh.push(standMesh);
     }
@@ -340,7 +344,7 @@ function createStones(){
         //making mesh for our stone and add it to mesh array
         var stoneGeometry = new THREE.SphereGeometry(stoneShape.radius, 16, 16);
         var material = new THREE.MeshPhongMaterial({
-            color: 0xcccccc,
+            color: 0x232426,
             side:THREE.FrontSide,
             map:stoneTexture});
         var stoneMesh = new THREE.Mesh(stoneGeometry, material);
@@ -369,6 +373,8 @@ function positioningEnemies(number) {
     enemieNumber = number;
     setInterval(enemieAttack,3000);
 }
+
+
 function enemieAttack() {
 
     for(let i =1 ;i<enemieNumber+1;i++){
@@ -385,7 +391,6 @@ function throwStone(catapultBody,shootDirection,shootVelocity) {
     if(countStones>19){
         countStones = 0;
     }
-    console.log(countStones);
 
     //shooting coordinate
     var x = catapultBody.position.x;
