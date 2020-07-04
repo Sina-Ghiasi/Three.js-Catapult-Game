@@ -6,11 +6,15 @@ var stonesBody = [], stonesMesh = [], catapultsBody = [], catapultsMesh = [];
 var standsBody = [], standsMesh = [], collidables = [];
 var mainStandBody, mainStandSize;
 var stats;
-var xPositions = [-55, -45, -25, -15, 0];
+var xPositions = [-50, -47, -28, -18, -5];
 var time = new Date();
 var gltfloader = new THREE.GLTFLoader();
 var keyboard = new THREEx.KeyboardState();
-var level = 1;
+var level  =parseInt( prompt("Hello Please enter hardship level you want \n choose between 1 to 4", 1)) ;
+if(level>4){
+    level =4;
+}
+
 var attackSet,endCheker;
 //shoot variables
 
@@ -20,10 +24,10 @@ var userShootVelocity = 4;
 window.addEventListener("keyup", function (e) {
 
     if (e.keyCode == 65) {
-        throwStone(catapultsBody[0], new THREE.Vector3(1, 1, 0), userShootVelocity);
+        throwStone(catapultsBody[0], new THREE.Vector3(1, 1, 0), userShootVelocity,"user");
     }
     if (e.keyCode == 32) {
-        positioningEnemies(2);
+        positioningEnemies(level);
         setInterval(function () {
             if(catapultsMesh[0].parent==null){
                 gameOver();
@@ -43,7 +47,7 @@ window.addEventListener("keyup", function (e) {
             for (let i = 0; i < stonesMesh.length; i++) {
                 checkCollison(stonesMesh[i], collidables);
             }
-        }, 600);
+        }, 200);
     }
 
 });
@@ -277,7 +281,7 @@ function checkCollison(stoneMesh, collidableMeshList) {
         if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
             console.log(collisionResults);
 
-            removeCatapult(collisionResults[0].object.name);
+            removeCatapult(collisionResults[0].object.name,stoneMesh.name);
 
         }
     }
@@ -308,7 +312,7 @@ function createCatapults(gltf) {
     catapult = gltf.scene;
     //tower.children[0].children[0].children[0].children[3].visible = false;
     catapult.scale.set(1 / 3, 1 / 3, 1 / 3);
-    var halfExt = new CANNON.Vec3(1,1,1);
+    var halfExt = new CANNON.Vec3(0.2,0.8,0.8);
     for (let i = 0; i < 5; i++) {
         var catapultShape = new CANNON.Box(halfExt);
         var catapultBody = new CANNON.Body({mass: 0});
@@ -324,7 +328,7 @@ function createCatapults(gltf) {
     catapultsBody[0].position.set(mainStandBody.position.x - 1.5, mainStandBody.position.y + mainStandSize.y, mainStandBody.position.z + 1);
     //todo rotate the main catapult
     //catapultsMesh[0].lookAt(new THREE.Vector3(1,0,0));
-    //catapultsMesh[0].rotateX(Math.PI/4) ;
+    catapultsMesh[0].rotateY(Math.PI/2) ;
     scene.add(catapultsMesh[0]);
     world.add(catapultsBody[0]);
     collidables[0].position.set(mainStandBody.position.x - 0.3, mainStandBody.position.y + mainStandSize.y+1, mainStandBody.position.z);
@@ -334,9 +338,9 @@ function createCatapults(gltf) {
 
 function createCollidableMesh() {
     for (let i = 0; i < 5; i++) {
-        var collideGeometry = new THREE.BoxGeometry(2, 1.5, 3);
+        var collideGeometry = new THREE.BoxGeometry(3.2, 1.5, 3);
         var material = new THREE.MeshBasicMaterial({
-            opacity: 1,
+            opacity: 0,
             side: THREE.FrontSide,
         });
 
@@ -347,12 +351,14 @@ function createCollidableMesh() {
     }
 }
 
-function removeCatapult(name) {
-    scene.remove(collidables[name]);
-    scene.remove(catapultsMesh[name]);
-    catapultsBody[name].position.set(100, -100, 100);
-    scene.remove(standsMesh[name]);
-    standsBody[name].position.set(100, -100, 100);
+function removeCatapult(catapultName,stoneName) {
+    if((stoneName==="enemy"&& catapultName==0)||(stoneName==="user"&& catapultName>0)){
+        scene.remove(collidables[catapultName]);
+        scene.remove(catapultsMesh[catapultName]);
+        catapultsBody[catapultName].position.set(100, -100, 100);
+        scene.remove(standsMesh[catapultName]);
+        standsBody[catapultName].position.set(100, -100, 100);
+    }
 }
 
 function victory() {
@@ -410,7 +416,7 @@ function createStones() {
     for (let i = 0; i < 20; i++) {
 
         //make a body for our stone and add it to body array
-        var stoneShape = new CANNON.Sphere(0.4);
+        var stoneShape = new CANNON.Sphere(0.3);
         var stoneBody = new CANNON.Body({mass: 80, material: physicsMaterial});
         stoneBody.addShape(stoneShape);
         stonesBody.push(stoneBody);
@@ -454,7 +460,7 @@ function positioningEnemies(number) {
 
         //adding stand
 
-        standsBody[i].position.set(newPosition.x + 1, newPosition.y - 0.9, newPosition.z);
+        standsBody[i].position.set(newPosition.x + 1, newPosition.y - 0.9, newPosition.z-0.5);
         world.add(standsBody[i]);
         scene.add(standsMesh[i]);
 
@@ -468,7 +474,7 @@ function enemyAttack() {
 
     for (let i = 1; i < level + 1; i++) {
         if (catapultsBody[i].world === world) {
-            throwStone(catapultsBody[i], new THREE.Vector3(-1, 1, 0), Math.random() * 15 + 9)
+            throwStone(catapultsBody[i], new THREE.Vector3(-1, 1, 0), Math.random() * 15 + 11,"enemy")
         }
     }
 
@@ -476,7 +482,7 @@ function enemyAttack() {
 
 var countStones = 0;
 
-function throwStone(catapultBody, shootDirection, shootVelocity) {
+function throwStone(catapultBody, shootDirection, shootVelocity,name) {
     if (countStones > 19) {
         countStones = 0;
     }
@@ -497,12 +503,13 @@ function throwStone(catapultBody, shootDirection, shootVelocity) {
         shootDirection.z * shootVelocity);
 
     //positioning stone out of shooting place
-    x += shootDirection.x * (3);
-    y += shootDirection.y * (5);
-    z += shootDirection.z * (3);
+    x += shootDirection.x * (2);
+    y += shootDirection.y * (3);
+    z += shootDirection.z * (2);
 
     stoneBody.position.set(x, y, z);
     stoneMesh.position.set(x, y, z);
+    stoneMesh.name = name;
     userShootVelocity = 0;
     countStones++;
 }
