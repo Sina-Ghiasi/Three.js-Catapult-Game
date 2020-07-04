@@ -334,9 +334,9 @@ function createCatapults(gltf) {
 
 function createCollidableMesh() {
     for (let i = 0; i < 5; i++) {
-        var collideGeometry = new THREE.BoxGeometry(3, 3, 4);
+        var collideGeometry = new THREE.BoxGeometry(2, 1.5, 3);
         var material = new THREE.MeshBasicMaterial({
-            opacity: 0,
+            opacity: 1,
             side: THREE.FrontSide,
         });
 
@@ -497,9 +497,9 @@ function throwStone(catapultBody, shootDirection, shootVelocity) {
         shootDirection.z * shootVelocity);
 
     //positioning stone out of shooting place
-    x += shootDirection.x * (4);
-    y += shootDirection.y * (4);
-    z += shootDirection.z * (4);
+    x += shootDirection.x * (3);
+    y += shootDirection.y * (5);
+    z += shootDirection.z * (3);
 
     stoneBody.position.set(x, y, z);
     stoneMesh.position.set(x, y, z);
