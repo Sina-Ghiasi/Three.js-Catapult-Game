@@ -4,18 +4,62 @@
     <meta charset="UTF-8">
     <title>Catapult</title>
     <style>
-        html,body{margin: 0;padding: 0;overflow: hidden  ;width: 100%;height: 100%;}
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
 
+        #power {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display: block;
+            font-size: 40px;
+            color: #f0ffff;
+        }
+
+        #game {
+            position: absolute;
+            top: 50px;
+            width: 100%;
+            text-align: center;
+            alignment: center;
+            z-index: 100;
+            display: block;
+            font-size: 200px;
+            background-color: #aeaeae;
+        }
+
+        #instruction {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            alignment: center;
+            z-index: 100;
+            display: block;
+            font-size:40px;
+            background-color: #afafaf;
+        }
     </style>
 
 </head>
 <body>
 <div id="webgl">
-<div id="power" style="position: absolute;font-size: 40px;alignment: bottom;color: azure "></div>
-<div id="hit" style="text-align: center; position: absolute;font-size: 100px;alignment: center;color: black "></div>
+    <div id="instruction">
+        Hi this is the instruction of the catapult game<br>
+        "A" key to shoot the enemies <br>
+        use space key to start the game<br>
+        author sina ghiasi using three js and cannon js library
+    </div>
+    <div id="power"></div>
+    <div id="game"></div>
 </div>
-
-
 
 
 <script src="lib/threejs/three.js"></script>
@@ -27,7 +71,6 @@
 <script src="lib/stats.min.js"></script>
 <script src="lib/GLTFLoader.js"></script>
 <script src="main.js"></script>
-
 
 
 </body>

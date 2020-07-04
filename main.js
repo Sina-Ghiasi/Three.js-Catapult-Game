@@ -10,12 +10,8 @@ var xPositions = [-50, -47, -28, -18, -5];
 var time = new Date();
 var gltfloader = new THREE.GLTFLoader();
 var keyboard = new THREEx.KeyboardState();
-var level  =parseInt( prompt("Hello Please enter hardship level you want \n choose between 1 to 4", 1)) ;
-if(level>4){
-    level =4;
-}
-
-var attackSet,endCheker;
+var level;
+var attackSet;
 //shoot variables
 
 var userShootVelocity = 4;
@@ -27,7 +23,13 @@ window.addEventListener("keyup", function (e) {
         throwStone(catapultsBody[0], new THREE.Vector3(1, 1, 0), userShootVelocity,"user");
     }
     if (e.keyCode == 32) {
+        document.getElementById("instruction").style.display ="none";
+        level  =parseInt( prompt("Hello Please enter hardship level you want \n choose between 1 to 4", 1)) ;
+        if(level>4){
+            level =4;
+        }
         positioningEnemies(level);
+        document.getElementById("game").innerHTML="";
         setInterval(function () {
             if(catapultsMesh[0].parent==null){
                 gameOver();
@@ -303,7 +305,8 @@ function startBackgroundMusic() {
 }
 function gameOver() {
     clearInterval(attackSet);
-    document.getElementById("hit").innerHTML = "game over";
+    document.getElementById("game").innerHTML = "Game over";
+    document.getElementById("game").style.color ="red";
     console.log("game over");
 }
 
@@ -365,7 +368,8 @@ function victory() {
     if (attackSet) {
         clearInterval(attackSet);
     }
-    document.getElementById("hit").innerHTML ="victory";
+    document.getElementById("game").innerHTML ="Victory";
+    document.getElementById("game").style.color ="#0AB408";
     console.log("victory");
 }
 
