@@ -22,7 +22,8 @@ window.addEventListener("keyup", function (e) {
     if (e.keyCode == 65) {
         throwStone(catapultsBody[0], new THREE.Vector3(1, 1, 0), userShootVelocity,"user");
     }
-    if (e.keyCode == 32) {
+    var loading =document.getElementById("loading").innerHTML;
+    if (e.keyCode == 32 && loading === "ready to go !") {
         document.getElementById("instruction").style.display ="none";
         level  =parseInt( prompt("Hello Please enter hardship level you want \n choose between 1 to 4", 1)) ;
         if(level>4){
