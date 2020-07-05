@@ -1,20 +1,20 @@
-var camera, activeCamera, orthographicCamera, scene, renderer, controls;
+var camera,camera2, activeCamera, orthographicCamera, scene, renderer, controls;
 
-//variables
+//game variables
 var plane, world, physicsMaterial, timeStep = 1 / 60;
 var stonesBody = [], stonesMesh = [], catapultsBody = [], catapultsMesh = [];
 var standsBody = [], standsMesh = [], collidables = [];
 var mainStandBody, mainStandSize;
-var stats;
-var xPositions = [-50, -47, -28, -18, -5];
-var time = new Date();
-var gltfloader = new THREE.GLTFLoader();
-var keyboard = new THREEx.KeyboardState();
+var userShootVelocity = 4;
 var level;
 var attackSet;
-//shoot variables
-
-var userShootVelocity = 4;
+var xPositions = [-50, -47, -28, -18, -5];
+var time = new Date();
+var catapultModel;
+//library variables
+var stats;
+var gltfloader = new THREE.GLTFLoader();
+var keyboard = new THREEx.KeyboardState();
 
 //window variables
 window.addEventListener("keyup", function (e) {
@@ -22,10 +22,20 @@ window.addEventListener("keyup", function (e) {
     if (e.keyCode == 65) {
         throwStone(catapultsBody[0], new THREE.Vector3(1, 1, 0), userShootVelocity,"user");
     }
+    if(e.keyCode == 67){
+        if(activeCamera ===camera){
+            activeCamera = camera2;
+        }else{
+            activeCamera =camera;
+        }
+
+    }
     var loading =document.getElementById("loading").innerHTML;
     if (e.keyCode == 32 && loading === "ready to go !") {
+
         document.getElementById("instruction").style.display ="none";
-        level  =parseInt( prompt("Hello Please enter hardship level you want \n choose between 1 to 4", 1)) ;
+        document.getElementById("game").style.display ="none";
+        level  =parseInt( prompt("Please enter hardship level you want \n choose between 1 to 4", 1)) ;
         if(level>4){
             level =4;
         }
@@ -60,7 +70,7 @@ gltfloader.load('models/tower1/scene.gltf', createTower);
 
 initCannon();
 init();
-startBackgroundMusic()
+startBackgroundMusic();
 update();
 
 
@@ -129,6 +139,16 @@ function init() {
     scene = new THREE.Scene();
     //scene.fog = new THREE.FogExp2(0xffffff,0.08);
 
+
+
+    //renderer
+    renderer = new THREE.WebGLRenderer({antialias: true});
+    renderer.setClearColor(new THREE.Color(0x000000));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.getElementById('webgl').appendChild(renderer.domElement);
+    renderer.shadowMap.enabled =true;
+
+
     //making our scene objects
 
     //plane texture
@@ -168,17 +188,26 @@ function init() {
 
 
     //lights
-    var ambiantlight = new THREE.AmbientLight(0xffffff, 4);
+    var ambiantlight = new THREE.AmbientLight(0xffffff, 3);
     scene.add(ambiantlight);
 
     var directionalLight = new THREE.DirectionalLight(0xffffff, 5);
-    scene.add(directionalLight);
+    directionalLight.position.set(-50,50,50);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.camera.near = 0.1;
+    directionalLight.shadow.camera.far = 500;
+    directionalLight.shadow.camera.right = 550;
+    directionalLight.shadow.camera.left = -550;
+    directionalLight.shadow.camera.top = 550;
+    directionalLight.shadow.camera.bottom = -550;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
 
-    var pointLight = new THREE.PointLight(0xffffff, 1);
-    pointLight.position.set(0, 0, 0);
-    pointLight.castShadow = true;
-    scene.add(pointLight);
+    scene.add(directionalLight);/*
+    var helper = new THREE.DirectionalLightHelper( directionalLight, 500 );
+    scene.add( helper );
 
+*/
     //cameras
     camera = new THREE.PerspectiveCamera(
         100,
@@ -186,44 +215,64 @@ function init() {
         1,
         1000
     );
-
-    /*var helper = new THREE.CameraHelper( camera );
-    scene.add( helper );*/
-
-    //orthographicCamera = new THREE.OrthographicCamera(window.innerWidth / -100, window.innerWidth / 100, window.innerHeight / 100, window.innerHeight / -100, 10, 1000);
-    // camera.add(orthographicCamera);
-
     camera.position.x = -64;
     camera.position.y = 14;
     camera.position.z = 7;
 
-    //renderer
-    renderer = new THREE.WebGLRenderer({antialias: true});
-    renderer.setClearColor(new THREE.Color(0x000000));
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.getElementById('webgl').appendChild(renderer.domElement);
-    renderer.shadowMap.enabled =true;
+
+    camera2 = new THREE.PerspectiveCamera(
+        100,
+        window.innerWidth / window.innerHeight,
+        1,
+        1000
+    );
+
+    camera2.position.x = -62;
+    camera2.position.y = 16;
+    camera2.position.z = 0;
+
+
+    /*var helper = new THREE.CameraHelper( camera );
+    scene.add( helper );*/
+
+    orthographicCamera = new THREE.OrthographicCamera(window.innerWidth / -40, window.innerWidth / 40, window.innerHeight / 40, window.innerHeight / -40, 0.01, 1000);
+    orthographicCamera.position.set(0,8,15);
+    camera.add(orthographicCamera);
+
+
+
 
     //setting default active camera
+
     activeCamera = camera;
+
     //adding orbit controls
-    controls = new THREE.OrbitControls(activeCamera, renderer.domElement);
+    //controls = new THREE.OrbitControls(activeCamera, renderer.domElement);
 
 
 
-    //setting camera
-
-    var look = new THREE.Vector3(-47, 10, 0);
-    camera.lookAt(look);
+    orthographicCamera.lookAt(-30,10,0);
 
 
-    //using gui
-     var gui = new dat.GUI();
-     var folder1 = gui.addFolder("camera and  light");
+    var look1 = new THREE.Vector3(-47, 10, 0);
+    camera.lookAt(look1);
+
+    var look2 = new THREE.Vector3(-47, 14, 0);
+    camera2.lookAt(look2);
+
+
+
+
+    //using gui to set the scene
+/*
+
+    var gui = new dat.GUI();
+    var folder1 = gui.addFolder("camera and  light");
      folder1.add(ambiantlight, 'intensity', 0, 10);
      folder1.add(activeCamera.position, 'z', -200, 200);
      folder1.add(activeCamera.position, 'x', -200, 200);
      folder1.add(activeCamera.position, 'y', -200, 200);
+*/
 
 }
 
@@ -256,13 +305,11 @@ function update() {
         if (userShootVelocity < 50) {
             document.getElementById("power").innerHTML = "power :" + userShootVelocity;
             userShootVelocity += 0.5;
-
         }
     }
 
-
     //update our scene here
-    renderer.render(scene, camera);
+    renderer.render(scene, activeCamera);
     stats.update();
     updatePhysics();
     requestAnimationFrame(function () {
@@ -305,34 +352,34 @@ function startBackgroundMusic() {
 
 }
 function gameOver() {
+    activeCamera = orthographicCamera;
     clearInterval(attackSet);
     document.getElementById("game").innerHTML = "Game over";
     document.getElementById("game").style.color ="red";
-    console.log("game over");
+    document.getElementById("game").style.display ="block";
 }
 
 function createCatapults(gltf) {
-    var catapult;
-    catapult = gltf.scene;
+
+    catapultModel = gltf.scene;
     //tower.children[0].children[0].children[0].children[3].visible = false;
-    catapult.scale.set(1 / 3, 1 / 3, 1 / 3);
+    catapultModel.scale.set(1 / 3, 1 / 3, 1 / 3);
     var halfExt = new CANNON.Vec3(0.2,0.8,0.8);
     for (let i = 0; i < 5; i++) {
         var catapultShape = new CANNON.Box(halfExt);
         var catapultBody = new CANNON.Body({mass: 0});
         catapultBody.addShape(catapultShape);
-        catapultsBody.push(catapultBody);
 
-        var catapultModel = catapult.clone();
-        catapultsMesh.push(catapultModel);
+        catapultsBody.push(catapultBody);
+        catapultsMesh.push(catapultModel.clone());
     }
     createCollidableMesh();
 
     //setting default positions
     catapultsBody[0].position.set(mainStandBody.position.x - 1.5, mainStandBody.position.y + mainStandSize.y, mainStandBody.position.z + 1);
     //todo rotate the main catapult
-    //catapultsMesh[0].lookAt(new THREE.Vector3(1,0,0));
-    catapultsMesh[0].rotateY(Math.PI/2) ;
+   /* catapultsMesh[0].lookAt(new THREE.Vector3(1,5,0));
+    catapultsMesh[0].rotation.y = (Math.PI/3) ;*/
     scene.add(catapultsMesh[0]);
     world.add(catapultsBody[0]);
     collidables[0].position.set(mainStandBody.position.x - 0.3, mainStandBody.position.y + mainStandSize.y+1, mainStandBody.position.z);
@@ -366,12 +413,13 @@ function removeCatapult(catapultName,stoneName) {
 }
 
 function victory() {
+    activeCamera = orthographicCamera;
     if (attackSet) {
         clearInterval(attackSet);
     }
     document.getElementById("game").innerHTML ="Victory";
     document.getElementById("game").style.color ="#0AB408";
-    console.log("victory");
+    document.getElementById("game").style.display ="block";
 }
 
 function createTower(gltf) {
@@ -535,4 +583,8 @@ function onWindowResize() {
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     renderer.setSize(width, height);
+    console.log("done");
+    if(width<500||height<500){
+        document.getElementById("instruction").style.fontSize="20 px";
+    }
 }

@@ -9,17 +9,24 @@
 <body>
 <div id="webgl">
     <div id="instruction">
-        Hi this is the instruction of the catapult game<br>
+        <br>
+        Hi this is the instruction of the catapult game<br><br>
         "A" key to shoot the enemies <br>
-        use space key to start the game<br>
-        author sina ghiasi using three js and cannon js library
-        <h2 id="loading" class="animate">Loading</h2>
+        "space" key to start the game and to play again<br>
+        "C" key to change the camera (you can do this once)<br>
+        <h4>author sina ghiasi using three js and cannon js library</h4>
+        <p id="loading" class="animate">Loading</p>
     </div>
     <div id="power"></div>
     <div id="game"></div>
 </div>
 
+<script>
+    window.addEventListener("load",function f() {
+        document.getElementById("loading").innerHTML = "ready to go !"
+    })
 
+</script>
 <script src="lib/threejs/three.js"></script>
 <script src="lib/dat.gui.min.js"></script>
 <script src="lib/OrbitControls.js"></script>
@@ -29,11 +36,7 @@
 <script src="lib/stats.min.js"></script>
 <script src="lib/GLTFLoader.js"></script>
 <script src="main.js"></script>
-<script>
-    window.addEventListener("load",function f() {
-        document.getElementById("loading").innerHTML = "ready to go !"
-    })
-</script>
+
 
 </body>
 </html>
